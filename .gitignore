@@ -1,0 +1,13 @@
+
+__pycache__/
+*.pyc
+
+
+.idea/
+*.iml
+
+*.yuv
+*.csv
+
+
+client/Decoder/TAppDecoder.exe
