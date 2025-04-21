@@ -1,4 +1,4 @@
-import socket, os
+import socket, os, sys
 from Decoder.DecodePlayer import decode_and_play
 
 SERVER_IP = '127.0.0.1'
@@ -20,8 +20,13 @@ def request_segment(video_id, segment_id):
     client_socket.close()
     return filename  # 返回下载路径给统一播放函数用
 
+
 if __name__ == "__main__":
-    video_id = input("请输入要播放的视频编号（1/2/3）:").strip()
+    if len(sys.argv) > 1:
+        video_id = sys.argv[1]
+    else:
+        video_id = input("请输入要播放的视频编号（1/2/3）:").strip()
+
     if video_id not in ["1", "2", "3"]:
         print("[ERROR] 无效的视频编号，请输入 1、2 或 3")
     else:
@@ -31,3 +36,4 @@ if __name__ == "__main__":
             segment_paths.append((path, video_id, segment_id))
 
         decode_and_play(segment_paths)
+
