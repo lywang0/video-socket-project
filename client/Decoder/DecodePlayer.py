@@ -17,6 +17,9 @@ frame_queue = Queue()
 exit_signal = object()
 
 def decode_segment(bin_path, video_id, segment_id):
+    """
+    解码视频片段的二进制码流，并将每帧 YUV 数据放入播放队列。
+    """
     yuv_path = f"decoded/video{video_id}/{segment_id}.yuv"
     os.makedirs(os.path.dirname(yuv_path), exist_ok=True)
 
@@ -44,22 +47,31 @@ def decode_segment(bin_path, video_id, segment_id):
 
     elif fmt == "YUV422":
         frame_size = width * height
-        uv_size = frame_size // 2
-        frame_count = len(yuv_data) // (frame_size + uv_size * 2)
+        uv_size = frame_size // 2   # U 和 V 分量总共为 Y 的一半（4:2:2）
+        frame_count = len(yuv_data) // (frame_size + uv_size * 2)  # 每帧所需字节数
 
         for i in range(frame_count):
-            base = i * (frame_size + 2 * uv_size)
+            base = i * (frame_size + 2 * uv_size)  # 当前帧在字节流中的起始位置
+
+            # 提取 Y,U,V 分量并 reshape 为二维图像
             y = np.frombuffer(yuv_data[base: base + frame_size], dtype=np.uint8).reshape((height, width))
             u = np.frombuffer(yuv_data[base + frame_size: base + frame_size + uv_size], dtype=np.uint8).reshape(
                 (height, width // 2))
             v = np.frombuffer(yuv_data[base + frame_size + uv_size: base + frame_size + 2 * uv_size], dtype=np.uint8).reshape(
                 (height, width // 2))
+
+            # 将 U/V 分量上采样回原始图像尺寸
             u_up = cv2.resize(u, (width, height), interpolation=cv2.INTER_LINEAR)
             v_up = cv2.resize(v, (width, height), interpolation=cv2.INTER_LINEAR)
+
+            # 合并 YUV 三通道并送入播放队列
             yuv = cv2.merge([y, u_up, v_up])
             frame_queue.put(("YUV_PLANAR_422", yuv, width, height))
 
 def player_loop():
+    """
+    播放线程主循环，从帧队列中取出图像帧，控制播放速率并显示。
+    """
     global PLAYBACK_FPS
     frame_interval = 1.0 / PLAYBACK_FPS
     last_frame_time = time.time()
@@ -105,6 +117,9 @@ def player_loop():
     cv2.destroyAllWindows()
 
 def decode_and_play(segments):
+    """
+    主入口：接收视频片段路径，开启播放线程并顺序解码播放。
+    """
     player = threading.Thread(target=player_loop)
     player.start()
 
