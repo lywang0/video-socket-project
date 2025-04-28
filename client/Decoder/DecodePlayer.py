@@ -11,10 +11,11 @@ VIDEO_INFO = {
     '3': {"format": "YUV422", "width": 800, "height": 480},
 }
 
-PLAYBACK_FPS = 60  # 默认视频播放帧率
+PLAYBACK_FPS = 30  # 默认视频播放帧率
 
 frame_queue = Queue()
 exit_signal = object()
+
 
 def decode_segment(bin_path, video_id, segment_id):
     """
@@ -47,7 +48,7 @@ def decode_segment(bin_path, video_id, segment_id):
 
     elif fmt == "YUV422":
         frame_size = width * height
-        uv_size = frame_size // 2   # U 和 V 分量总共为 Y 的一半（4:2:2）
+        uv_size = frame_size // 2  # U 和 V 分量总共为 Y 的一半（4:2:2）
         frame_count = len(yuv_data) // (frame_size + uv_size * 2)  # 每帧所需字节数
 
         for i in range(frame_count):
@@ -57,7 +58,8 @@ def decode_segment(bin_path, video_id, segment_id):
             y = np.frombuffer(yuv_data[base: base + frame_size], dtype=np.uint8).reshape((height, width))
             u = np.frombuffer(yuv_data[base + frame_size: base + frame_size + uv_size], dtype=np.uint8).reshape(
                 (height, width // 2))
-            v = np.frombuffer(yuv_data[base + frame_size + uv_size: base + frame_size + 2 * uv_size], dtype=np.uint8).reshape(
+            v = np.frombuffer(yuv_data[base + frame_size + uv_size: base + frame_size + 2 * uv_size],
+                              dtype=np.uint8).reshape(
                 (height, width // 2))
 
             # 将 U/V 分量上采样回原始图像尺寸
@@ -67,6 +69,7 @@ def decode_segment(bin_path, video_id, segment_id):
             # 合并 YUV 三通道并送入播放队列
             yuv = cv2.merge([y, u_up, v_up])
             frame_queue.put(("YUV_PLANAR_422", yuv, width, height))
+
 
 def player_loop():
     """
@@ -116,6 +119,7 @@ def player_loop():
 
     cv2.destroyAllWindows()
 
+
 def decode_and_play(segments):
     """
     主入口：接收视频片段路径，开启播放线程并顺序解码播放。
@@ -128,5 +132,3 @@ def decode_and_play(segments):
 
     frame_queue.put(exit_signal)
     player.join()
-
-

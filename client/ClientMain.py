@@ -4,6 +4,7 @@ from Decoder.DecodePlayer import decode_and_play
 SERVER_IP = '127.0.0.1'
 PORT = 8001
 
+
 def request_segment(video_id, segment_id):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((SERVER_IP, PORT))
@@ -36,4 +37,3 @@ if __name__ == "__main__":
             segment_paths.append((path, video_id, segment_id))
 
         decode_and_play(segment_paths)
-
